@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply text-gray-900 bg-gray-50;
+  }
+}
+
+.container-narrow {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
