@@ -19,6 +19,8 @@ model User {
   phone            String?
   bio              String?
   avatarUrl        String?
+  isVerified       Boolean   @default(false)
+  verificationToken String?
   createdAt        DateTime  @default(now())
   listings         Listing[]
   sentMessages     Message[] @relation("SentMessages")

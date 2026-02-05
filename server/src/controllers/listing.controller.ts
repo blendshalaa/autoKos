@@ -17,6 +17,21 @@ export const createListing = async (req: AuthRequest, res: Response): Promise<vo
             fuelType, transmission, bodyType, color, location, description,
         } = req.body;
 
+        // Check for listing limits (New User < 30 days => Max 3 listings)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        if (req.user.createdAt > thirtyDaysAgo) {
+            const count = await prisma.listing.count({
+                where: { userId: req.user.id }
+            });
+
+            if (count >= 3) {
+                sendError(res, 'New accounts (less than 30 days old) are limited to 3 listings to prevent spam.', 403);
+                return;
+            }
+        }
+
         const listing = await prisma.listing.create({
             data: {
                 userId: req.user.id,

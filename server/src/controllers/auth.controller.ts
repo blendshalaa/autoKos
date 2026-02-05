@@ -3,7 +3,9 @@ import { AuthRequest, SafeUser } from '../types';
 import { sendSuccess, sendError } from '../utils/response';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateToken } from '../utils/jwt';
+import { sendVerificationEmail } from '../utils/email';
 import prisma from '../config/database';
+import { v4 as uuidv4 } from 'uuid';
 
 // Helper to remove password from user object
 const sanitizeUser = (user: { password: string;[key: string]: unknown }): SafeUser => {
@@ -28,6 +30,9 @@ export const register = async (req: AuthRequest, res: Response): Promise<void> =
         // Hash password
         const hashedPassword = await hashPassword(password);
 
+        // Create verification token
+        const verificationToken = uuidv4();
+
         // Create user
         const user = await prisma.user.create({
             data: {
@@ -35,8 +40,13 @@ export const register = async (req: AuthRequest, res: Response): Promise<void> =
                 password: hashedPassword,
                 name,
                 location: location || null,
+                verificationToken,
+                isVerified: false
             },
         });
+
+        // Send verification email
+        await sendVerificationEmail(email, verificationToken);
 
         // Generate token
         const token = generateToken(user.id, user.email);
@@ -44,10 +54,44 @@ export const register = async (req: AuthRequest, res: Response): Promise<void> =
         sendSuccess(res, {
             user: sanitizeUser(user),
             token,
+            message: 'Registration successful. Please check your email to verify your account.'
         }, 201);
     } catch (error) {
         console.error('Register error:', error);
         sendError(res, 'Registration failed', 500);
+    }
+};
+
+export const verifyEmail = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { token } = req.body;
+
+        if (!token) {
+            sendError(res, 'Verification token is required', 400);
+            return;
+        }
+
+        const user = await prisma.user.findFirst({
+            where: { verificationToken: token },
+        });
+
+        if (!user) {
+            sendError(res, 'Invalid or expired verification token', 400);
+            return;
+        }
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                isVerified: true,
+                verificationToken: null,
+            },
+        });
+
+        sendSuccess(res, { message: 'Email verified successfully' });
+    } catch (error) {
+        console.error('Verify email error:', error);
+        sendError(res, 'Verification failed', 500);
     }
 };
 
