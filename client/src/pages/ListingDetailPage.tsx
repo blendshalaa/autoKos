@@ -9,7 +9,9 @@ import {
     TruckIcon, // BodyType replacement
     UserCircleIcon,
     PhoneIcon,
-    ChatBubbleLeftRightIcon
+    ChatBubbleLeftRightIcon,
+    FlagIcon,
+    CheckBadgeIcon
 } from '@heroicons/react/24/outline';
 import api from '../services/api';
 import type { Listing, User, ApiResponse } from '../types/definitions';
@@ -23,6 +25,8 @@ export const ListingDetailPage: React.FC = () => {
     const [listing, setListing] = useState<Listing | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeImage, setActiveImage] = useState<string | null>(null);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [reportReason, setReportReason] = useState('');
 
     const { user } = useAuthStore();
     const navigate = useNavigate();
@@ -87,6 +91,22 @@ export const ListingDetailPage: React.FC = () => {
             }
         }
     };
+
+    const handleReport = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await api.post(`/listings/${id}/report`, { reason: reportReason });
+            toast.success('Raportimi u dërgua me sukses! Faleminderit.');
+            setIsReportModalOpen(false);
+            setReportReason('');
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || 'Dështoi raportimi.');
+        }
+    };
+
+    const isNewSeller = listing.user?.createdAt
+        ? (new Date().getTime() - new Date(listing.user.createdAt).getTime()) < (30 * 24 * 60 * 60 * 1000)
+        : false;
 
     return (
         <Layout>
@@ -193,6 +213,12 @@ export const ListingDetailPage: React.FC = () => {
                                     <div className="text-sm text-gray-500">
                                         {listing.user?.location || listing.location}
                                     </div>
+                                    {isNewSeller && (
+                                        <div className="mt-1 flex items-center text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full w-fit">
+                                            <CheckBadgeIcon className="h-3 w-3 mr-1" />
+                                            Shitës i Ri
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -204,10 +230,19 @@ export const ListingDetailPage: React.FC = () => {
                             )}
 
                             {!isOwner ? (
-                                <Button className="w-full flex items-center justify-center">
-                                    <ChatBubbleLeftRightIcon className="h-5 w-5 mr-2" />
-                                    Mesazho Shitësin
-                                </Button>
+                                <>
+                                    <Button className="w-full flex items-center justify-center">
+                                        <ChatBubbleLeftRightIcon className="h-5 w-5 mr-2" />
+                                        Mesazho Shitësin
+                                    </Button>
+                                    <button
+                                        onClick={() => setIsReportModalOpen(true)}
+                                        className="mt-3 flex items-center justify-center w-full text-xs text-gray-400 hover:text-red-500 transition-colors"
+                                    >
+                                        <FlagIcon className="h-3 w-3 mr-1" />
+                                        Raporto Shpalljen
+                                    </button>
+                                </>
                             ) : (
                                 <div className="grid grid-cols-2 gap-3">
                                     <Button
@@ -231,6 +266,41 @@ export const ListingDetailPage: React.FC = () => {
 
                 </div>
             </div>
-        </Layout>
+
+            {/* Report Modal */}
+            {
+                isReportModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+                        <div className="w-full max-w-md bg-white rounded-lg p-6 shadow-xl">
+                            <h3 className="text-lg font-bold text-gray-900 mb-4">Raporto Shpalljen</h3>
+                            <form onSubmit={handleReport}>
+                                <textarea
+                                    className="w-full h-32 p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                    placeholder="Pse po e raportoni këtë shpallje? (psh. Mashtrim, Përmbajtje e papërshtatshme)"
+                                    value={reportReason}
+                                    onChange={(e) => setReportReason(e.target.value)}
+                                    required
+                                />
+                                <div className="mt-4 flex justify-end space-x-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsReportModalOpen(false)}
+                                        className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
+                                    >
+                                        Anulo
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                                    >
+                                        Dërgo Raportin
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )
+            }
+        </Layout >
     );
 };

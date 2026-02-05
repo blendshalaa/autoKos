@@ -26,8 +26,10 @@ export const RegisterPage: React.FC = () => {
         try {
             const response = await api.post<ApiResponse<AuthResponse>>('/auth/register', data);
             setAuth(response.data.data.user, response.data.data.token);
-            toast.success('Llogaria u krijua me sukses!');
-            navigate('/');
+            toast.success('Regjistrimi u krye me sukses! Ju lutem kontrolloni emailin tuaj për verifikim.');
+            setTimeout(() => {
+                navigate('/login');
+            }, 4000);
         } catch (error: any) {
             toast.error(error.response?.data?.error || 'Dështoi regjistrimi. Provoni përsëri.');
         } finally {
