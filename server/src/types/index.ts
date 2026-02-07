@@ -1,6 +1,25 @@
 import { Request } from 'express';
 import { User } from '@prisma/client';
 
+// Multer file type definition
+declare global {
+    namespace Express {
+        namespace Multer {
+            interface File {
+                fieldname: string;
+                originalname: string;
+                encoding: string;
+                mimetype: string;
+                size: number;
+                destination: string;
+                filename: string;
+                path: string;
+                buffer: Buffer;
+            }
+        }
+    }
+}
+
 // Extended Request with authenticated user
 export interface AuthRequest extends Request {
     user?: User;
