@@ -1,6 +1,8 @@
+import { createServer } from 'http';
 import app from './app';
 import { env } from './config/env';
 import prisma from './config/database';
+import { initializeSocket } from './socket';
 
 const startServer = async (): Promise<void> => {
     try {
@@ -8,8 +10,14 @@ const startServer = async (): Promise<void> => {
         await prisma.$connect();
         console.log('✅ Database connected successfully');
 
+        // Create HTTP server
+        const httpServer = createServer(app);
+
+        // Initialize Socket.io
+        initializeSocket(httpServer);
+
         // Start server
-        app.listen(env.PORT, () => {
+        httpServer.listen(env.PORT, () => {
             console.log(`🚀 Server running on port ${env.PORT}`);
             console.log(`📍 Environment: ${env.NODE_ENV}`);
             console.log(`🌐 Frontend URL: ${env.FRONTEND_URL}`);

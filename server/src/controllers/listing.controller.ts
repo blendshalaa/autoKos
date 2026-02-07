@@ -53,6 +53,7 @@ export const createListing = async (req: AuthRequest, res: Response): Promise<vo
                         id: true,
                         name: true,
                         avatarUrl: true,
+                        bio: true // Include bio for listing card/details
                     },
                 },
                 images: true,
@@ -159,6 +160,7 @@ export const getListings = async (req: AuthRequest, res: Response): Promise<void
                             id: true,
                             name: true,
                             avatarUrl: true,
+                            bio: true
                         },
                     },
                     images: {
@@ -193,6 +195,7 @@ export const getListingById = async (req: AuthRequest, res: Response): Promise<v
                         location: true,
                         avatarUrl: true,
                         createdAt: true,
+                        bio: true
                     },
                 },
                 images: {
