@@ -59,7 +59,7 @@ export const deleteImage = async (imageUrl: string): Promise<void> => {
 };
 
 export const processAvatar = async (
-    file: Express.Multer.File,
+    file: Express.Multer.File,  //gdfgdfgdfgdfgdfgdfgdfg 
     userId: string
 ): Promise<string> => {
     const uploadDir = path.join(process.cwd(), env.UPLOAD_DIR, 'avatars');
