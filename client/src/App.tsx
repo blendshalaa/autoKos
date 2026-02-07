@@ -10,6 +10,8 @@ import { CreateListingPage } from './pages/CreateListingPage';
 import { EditListingPage } from './pages/EditListingPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
+import { EditProfilePage } from './pages/profile/EditProfilePage';
+import MessagesPage from './pages/MessagesPage';
 import { useAuthStore } from './store/authStore';
 import api from './services/api';
 
@@ -63,6 +65,11 @@ const App: React.FC = () => {
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/listings/:id" element={<ListingDetailPage />} />
         <Route path="/profile/:userId" element={<ProfilePage />} />
+        <Route path="/profile/edit" element={
+          <ProtectedRoute>
+            <EditProfilePage />
+          </ProtectedRoute>
+        } />
 
         {/* Protected Routes */}
         <Route path="/listings/new" element={
@@ -83,6 +90,11 @@ const App: React.FC = () => {
                 I'll handle this in the Nav link to point to dynamic profile ID. 
                 But if /my-listings is visited directly: */}
             <MyListingsRedirect />
+          </ProtectedRoute>
+        } />
+        <Route path="/messages" element={
+          <ProtectedRoute>
+            <MessagesPage />
           </ProtectedRoute>
         } />
       </Routes>

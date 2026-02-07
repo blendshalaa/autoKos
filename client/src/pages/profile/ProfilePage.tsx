@@ -91,7 +91,12 @@ export const ProfilePage: React.FC = () => {
 
                         <div className="flex-shrink-0">
                             {isOwnProfile ? (
-                                <Button variant="outline">Modifiko Profilin</Button>
+                                <button
+                                    onClick={() => window.location.href = '/profile/edit'}
+                                    className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                >
+                                    Modifiko Profilin
+                                </button>
                             ) : (
                                 <Button>Mesazho Përdoruesin</Button>
                             )}

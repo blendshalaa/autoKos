@@ -6,7 +6,6 @@ import {
     CalendarIcon,
     BoltIcon,
     CogIcon, // Transmission replacement
-    TruckIcon, // BodyType replacement
     UserCircleIcon,
     PhoneIcon,
     ChatBubbleLeftRightIcon,
@@ -17,7 +16,7 @@ import api from '../services/api';
 import type { Listing, User, ApiResponse } from '../types/definitions';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/common/Button';
-import { formatPrice, formatNumber, formatDate, getImageUrl } from '../utils/format';
+import { formatPrice, formatNumber, getImageUrl } from '../utils/format';
 import { useAuthStore } from '../store/authStore';
 
 export const ListingDetailPage: React.FC = () => {
@@ -102,6 +101,20 @@ export const ListingDetailPage: React.FC = () => {
         } catch (error: any) {
             toast.error(error.response?.data?.error || 'Dështoi raportimi.');
         }
+    };
+    const handleMessageSeller = () => {
+        if (!user) {
+            toast.error('Ju lutem hyni në llogari për të dërguar mesazh');
+            navigate('/login');
+            return;
+        }
+        navigate('/messages', {
+            state: {
+                recipientId: listing.userId,
+                listingId: listing.id,
+                recipient: listing.user
+            }
+        });
     };
 
     const isNewSeller = listing.user?.createdAt
@@ -229,9 +242,18 @@ export const ListingDetailPage: React.FC = () => {
                                 </div>
                             )}
 
+                            {listing.user?.bio && (
+                                <p className="text-sm text-gray-500 mb-6 italic border-l-2 border-gray-200 pl-3">
+                                    "{listing.user.bio}"
+                                </p>
+                            )}
+
                             {!isOwner ? (
                                 <>
-                                    <Button className="w-full flex items-center justify-center">
+                                    <Button
+                                        className="w-full flex items-center justify-center"
+                                        onClick={handleMessageSeller}
+                                    >
                                         <ChatBubbleLeftRightIcon className="h-5 w-5 mr-2" />
                                         Mesazho Shitësin
                                     </Button>
