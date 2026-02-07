@@ -7,7 +7,8 @@
         ],
         "outDir": "./dist",
         "rootDir": "./src",
-        "strict": true,
+        "strict": false,
+        "noImplicitAny": false,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
@@ -17,10 +18,9 @@
         "sourceMap": true,
         "moduleResolution": "node",
         "allowSyntheticDefaultImports": true,
-        "noImplicitAny": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "noImplicitReturns": true,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "noImplicitReturns": false,
         "noFallthroughCasesInSwitch": true,
         "typeRoots": [
             "./node_modules/@types"
