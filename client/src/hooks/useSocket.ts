@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 export const useSocket = () => {
     const { token, user } = useAuthStore();
     const socketRef = useRef<Socket | null>(null);
+    const [socketState, setSocketState] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
@@ -24,6 +25,7 @@ export const useSocket = () => {
         if (!socket) return;
 
         socketRef.current = socket;
+        setSocketState(socket);
 
         const onConnect = () => {
             console.log('✅ Socket connected');
@@ -75,7 +77,7 @@ export const useSocket = () => {
     };
 
     return {
-        socket: socketRef.current,
+        socket: socketState,
         isConnected,
         sendMessage
     };

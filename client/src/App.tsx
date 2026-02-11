@@ -11,6 +11,7 @@ import { EditListingPage } from './pages/EditListingPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
 import { EditProfilePage } from './pages/profile/EditProfilePage';
+import { FavoritesPage } from './pages/FavoritesPage';
 import MessagesPage from './pages/MessagesPage';
 import { useAuthStore } from './store/authStore';
 import api from './services/api';
@@ -95,6 +96,11 @@ const App: React.FC = () => {
         <Route path="/messages" element={
           <ProtectedRoute>
             <MessagesPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/favorites" element={
+          <ProtectedRoute>
+            <FavoritesPage />
           </ProtectedRoute>
         } />
       </Routes>

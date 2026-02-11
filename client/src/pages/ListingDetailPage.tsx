@@ -10,7 +10,10 @@ import {
     PhoneIcon,
     ChatBubbleLeftRightIcon,
     FlagIcon,
-    CheckBadgeIcon
+    CheckBadgeIcon,
+    XMarkIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import api from '../services/api';
 import type { Listing, User, ApiResponse } from '../types/definitions';
@@ -29,6 +32,37 @@ export const ListingDetailPage: React.FC = () => {
 
     const { user } = useAuthStore();
     const navigate = useNavigate();
+
+    const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+    const handleNextImage = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        if (!listing?.images || listing.images.length === 0) return;
+        const sorted = [...listing.images].sort((a, b) => a.order - b.order);
+        const currentIndex = sorted.findIndex(img => img.imageUrl === activeImage);
+        const nextIndex = (currentIndex + 1) % sorted.length;
+        setActiveImage(sorted[nextIndex].imageUrl);
+    };
+
+    const handlePrevImage = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        if (!listing?.images || listing.images.length === 0) return;
+        const sorted = [...listing.images].sort((a, b) => a.order - b.order);
+        const currentIndex = sorted.findIndex(img => img.imageUrl === activeImage);
+        const prevIndex = (currentIndex - 1 + sorted.length) % sorted.length;
+        setActiveImage(sorted[prevIndex].imageUrl);
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!isLightboxOpen) return;
+            if (e.key === 'Escape') setIsLightboxOpen(false);
+            if (e.key === 'ArrowRight') handleNextImage();
+            if (e.key === 'ArrowLeft') handlePrevImage();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isLightboxOpen, activeImage, listing]);
 
     useEffect(() => {
         const fetchListing = async () => {
@@ -121,22 +155,35 @@ export const ListingDetailPage: React.FC = () => {
         ? (new Date().getTime() - new Date(listing.user.createdAt).getTime()) < (30 * 24 * 60 * 60 * 1000)
         : false;
 
+
+
     return (
         <Layout>
             <div className="container-narrow py-8">
+                {/* ... (grid layout) */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                     {/* Left Column: Images & Details */}
                     <div className="lg:col-span-2 space-y-8">
                         {/* Image Gallery */}
-                        <div className="bg-white rounded-lg overflow-hidden shadow-sm">
-                            <div className="aspect-w-16 aspect-h-10 bg-gray-100 h-96 flex items-center justify-center">
+                        <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                            <div
+                                className="aspect-w-16 aspect-h-10 bg-gray-100 h-96 flex items-center justify-center cursor-zoom-in relative group"
+                                onClick={() => setIsLightboxOpen(true)}
+                            >
                                 {activeImage ? (
-                                    <img
-                                        src={getImageUrl(activeImage)}
-                                        alt={listing.make}
-                                        className="object-contain w-full h-full"
-                                    />
+                                    <>
+                                        <img
+                                            src={getImageUrl(activeImage)}
+                                            alt={listing.make}
+                                            className="object-contain w-full h-full"
+                                        />
+                                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all flex items-center justify-center">
+                                            <span className="opacity-0 group-hover:opacity-100 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+                                                Kliko për të zmadhuar
+                                            </span>
+                                        </div>
+                                    </>
                                 ) : (
                                     <div className="text-gray-400">No Image Available</div>
                                 )}
@@ -150,7 +197,10 @@ export const ListingDetailPage: React.FC = () => {
                                         .map((img) => (
                                             <button
                                                 key={img.id}
-                                                onClick={() => setActiveImage(img.imageUrl)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActiveImage(img.imageUrl);
+                                                }}
                                                 className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 transition-colors ${activeImage === img.imageUrl ? 'border-blue-600' : 'border-transparent'
                                                     }`}
                                             >
@@ -168,19 +218,27 @@ export const ListingDetailPage: React.FC = () => {
                         {/* Description */}
                         <div className="bg-white p-6 rounded-lg shadow-sm">
                             <h3 className="text-lg font-bold text-gray-900 mb-4">Përshkrimi</h3>
-                            <p className="text-gray-700 whitespace-pre-line">{listing.description}</p>
+                            <p className="text-gray-700 whitespace-pre-line leading-relaxed">{listing.description}</p>
                         </div>
                     </div>
 
                     {/* Right Column: Key Info & Seller */}
                     <div className="space-y-6">
-
                         {/* Main Info Card */}
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                             <h1 className="text-2xl font-bold text-gray-900">{listing.make} {listing.model}</h1>
                             <div className="mt-2 text-3xl font-bold text-blue-600">{formatPrice(listing.price)}</div>
 
+                            {/* Status Badge */}
+                            {listing.status !== 'ACTIVE' && (
+                                <div className={`inline-block px-3 py-1 rounded-md text-sm font-bold mt-2 ${listing.status === 'SOLD' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                    {listing.status === 'SOLD' ? 'E SHITUR' : 'E REZERVUAR'}
+                                </div>
+                            )}
+
                             <div className="mt-6 space-y-3">
+                                {/* Details list... can keep existing structure or replace if simple */}
                                 <div className="flex items-center text-gray-600">
                                     <CalendarIcon className="h-5 w-5 mr-3 text-gray-400" />
                                     <span>Viti {listing.year}</span>
@@ -235,19 +293,7 @@ export const ListingDetailPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            {listing.user?.phone && (
-                                <div className="flex items-center mb-4 text-gray-700 font-medium">
-                                    <PhoneIcon className="h-5 w-5 mr-2 text-gray-400" />
-                                    {listing.user.phone}
-                                </div>
-                            )}
-
-                            {listing.user?.bio && (
-                                <p className="text-sm text-gray-500 mb-6 italic border-l-2 border-gray-200 pl-3">
-                                    "{listing.user.bio}"
-                                </p>
-                            )}
-
+                            {/* Actions */}
                             {!isOwner ? (
                                 <>
                                     <Button
@@ -285,44 +331,86 @@ export const ListingDetailPage: React.FC = () => {
                             )}
                         </div>
                     </div>
-
                 </div>
             </div>
 
-            {/* Report Modal */}
-            {
-                isReportModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-                        <div className="w-full max-w-md bg-white rounded-lg p-6 shadow-xl">
-                            <h3 className="text-lg font-bold text-gray-900 mb-4">Raporto Shpalljen</h3>
-                            <form onSubmit={handleReport}>
-                                <textarea
-                                    className="w-full h-32 p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 resize-none"
-                                    placeholder="Pse po e raportoni këtë shpallje? (psh. Mashtrim, Përmbajtje e papërshtatshme)"
-                                    value={reportReason}
-                                    onChange={(e) => setReportReason(e.target.value)}
-                                    required
-                                />
-                                <div className="mt-4 flex justify-end space-x-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsReportModalOpen(false)}
-                                        className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
-                                    >
-                                        Anulo
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                                    >
-                                        Dërgo Raportin
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+            {/* Lightbox Overlay */}
+            {isLightboxOpen && (
+                <div className="fixed inset-0 z-[100] bg-black bg-opacity-95 flex items-center justify-center backdrop-blur-sm">
+                    {/* Close Button */}
+                    <button
+                        onClick={() => setIsLightboxOpen(false)}
+                        className="absolute top-4 right-4 text-white hover:text-gray-300 p-2 z-[110]"
+                    >
+                        <XMarkIcon className="h-8 w-8" />
+                    </button>
+
+                    {/* Navigation Buttons */}
+                    <button
+                        onClick={handlePrevImage}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 p-2 z-[110] bg-black bg-opacity-20 hover:bg-opacity-40 rounded-full"
+                    >
+                        <ChevronLeftIcon className="h-8 w-8" />
+                    </button>
+
+                    <button
+                        onClick={handleNextImage}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 p-2 z-[110] bg-black bg-opacity-20 hover:bg-opacity-40 rounded-full"
+                    >
+                        <ChevronRightIcon className="h-8 w-8" />
+                    </button>
+
+                    {/* Main Image */}
+                    <div className="w-full h-full p-4 flex items-center justify-center" onClick={() => setIsLightboxOpen(false)}>
+                        <img
+                            src={getImageUrl(activeImage || '')}
+                            alt="Full screen"
+                            className="max-w-full max-h-full object-contain cursor-default"
+                            onClick={(e) => e.stopPropagation()}
+                        />
                     </div>
-                )
-            }
-        </Layout >
+
+                    {/* Counter */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded-full text-sm">
+                        {listing.images && (
+                            `${listing.images.findIndex(img => img.imageUrl === activeImage) + 1} / ${listing.images.length}`
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Report Modal */}
+            {isReportModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+                    <div className="w-full max-w-md bg-white rounded-lg p-6 shadow-xl">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Raporto Shpalljen</h3>
+                        <form onSubmit={handleReport}>
+                            <textarea
+                                className="w-full h-32 p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                placeholder="Pse po e raportoni këtë shpallje? (psh. Mashtrim, Përmbajtje e papërshtatshme)"
+                                value={reportReason}
+                                onChange={(e) => setReportReason(e.target.value)}
+                                required
+                            />
+                            <div className="mt-4 flex justify-end space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsReportModalOpen(false)}
+                                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
+                                >
+                                    Anulo
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                                >
+                                    Dërgo Raportin
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </Layout>
     );
 };

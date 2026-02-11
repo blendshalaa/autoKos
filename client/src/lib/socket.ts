@@ -13,7 +13,10 @@ export const getSocket = (token: string | null) => {
         return null;
     }
 
-    if (!socket) {
+    if (!socket || (socket.auth as any)?.token !== token) {
+        if (socket) {
+            socket.disconnect();
+        }
         socket = io(SOCKET_URL, {
             auth: {
                 token

@@ -20,6 +20,7 @@ interface EditListingFormData {
     bodyType: string;
     color: string;
     location: string;
+    status: 'ACTIVE' | 'RESERVED' | 'SOLD';
     description: string;
 }
 
@@ -28,17 +29,25 @@ const FUELS = ['Diesel', 'Petrol', 'Hybrid', 'Electric', 'LPG'];
 const TRANSMISSIONS = ['Manual', 'Automatic'];
 const BODY_TYPES = ['Sedan', 'SUV', 'Hatchback', 'Coupe', 'Van', 'Truck'];
 const CITIES = ['Prishtina', 'Prizren', 'Peja', 'Gjakova', 'Ferizaj', 'Gjilan', 'Mitrovica'];
+const STATUSES = [
+    { value: 'ACTIVE', label: 'Aktive' },
+    { value: 'RESERVED', label: 'E Rezervuar' },
+    { value: 'SOLD', label: 'E Shitur' }
+];
 
 export const EditListingPage: React.FC = () => {
+    // ... (existing hooks)
     const { id } = useParams<{ id: string }>();
     const { register, handleSubmit, setValue, formState: { errors } } = useForm<EditListingFormData>();
     const [images, setImages] = useState<File[]>([]); // New images
-    const [existingImages, setExistingImages] = useState<Array<{ id: string, imageUrl: string }>>([]);
+    const [existingImages, setExistingImages] = useState<Array<{ id: string, imageUrl: string, order: number }>>([]);
     const [previews, setPreviews] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
+    const [draggedExistingIndex, setDraggedExistingIndex] = useState<number | null>(null);
     const navigate = useNavigate();
 
+    // ... (useEffect to fetch listing)
     useEffect(() => {
         const fetchListing = async () => {
             try {
@@ -56,10 +65,11 @@ export const EditListingPage: React.FC = () => {
                 setValue('bodyType', listing.bodyType);
                 setValue('color', listing.color);
                 setValue('location', listing.location);
+                setValue('status', listing.status);
                 setValue('description', listing.description);
 
                 if (listing.images) {
-                    setExistingImages(listing.images);
+                    setExistingImages(listing.images.sort((a, b) => a.order - b.order));
                 }
             } catch (error) {
                 console.error('Failed to fetch listing', error);
@@ -112,11 +122,44 @@ export const EditListingPage: React.FC = () => {
         }
     };
 
+    // ... (handleImageChange, removeNewImage, removeExistingImage)
+
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+        setDraggedExistingIndex(index);
+        e.dataTransfer.effectAllowed = "move";
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+    };
+
+    const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+        e.preventDefault();
+        if (draggedExistingIndex === null || draggedExistingIndex === dropIndex) return;
+
+        const newExistingImages = [...existingImages];
+        const [movedImage] = newExistingImages.splice(draggedExistingIndex, 1);
+        newExistingImages.splice(dropIndex, 0, movedImage);
+
+        setExistingImages(newExistingImages);
+        setDraggedExistingIndex(null);
+    };
+
     const onSubmit = async (data: EditListingFormData) => {
         setIsLoading(true);
         try {
             // Update listing details
             await api.put(`/listings/${id}`, data);
+
+            // Reorder existing images
+            if (existingImages.length > 0) {
+                const reorderedImages = existingImages.map((img, index) => ({
+                    id: img.id,
+                    order: index
+                }));
+                await api.put(`/listings/${id}/images/reorder`, { images: reorderedImages });
+            }
 
             // Upload new images if any
             if (images.length > 0) {
@@ -228,6 +271,16 @@ export const EditListingPage: React.FC = () => {
                                     {CITIES.map(city => <option key={city} value={city}>{city}</option>)}
                                 </select>
                             </div>
+                            {/* Status */}
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700">Statusi</label>
+                                <select
+                                    {...register('status', { required: true })}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 h-10"
+                                >
+                                    {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                                </select>
+                            </div>
                         </div>
 
                         {/* Description */}
@@ -242,12 +295,22 @@ export const EditListingPage: React.FC = () => {
 
                             {/* Existing Images */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-                                {existingImages.map((img) => (
-                                    <div key={img.id} className="relative group aspect-w-16 aspect-h-12 bg-gray-100 rounded-lg overflow-hidden h-24">
+                                {existingImages.map((img, idx) => (
+                                    <div
+                                        key={img.id}
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, idx)}
+                                        onDragOver={(e) => handleDragOver(e)}
+                                        onDrop={(e) => handleDrop(e, idx)}
+                                        className={`relative group aspect-w-16 aspect-h-12 bg-gray-100 rounded-lg overflow-hidden h-24 cursor-move ${draggedExistingIndex === idx ? 'opacity-50' : ''}`}
+                                    >
                                         <img src={getImageUrl(img.imageUrl)} alt="existing" className="object-cover w-full h-full" />
                                         <button type="button" onClick={() => removeExistingImage(img.id)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-80 hover:opacity-100">
                                             <XMarkIcon className="h-4 w-4" />
                                         </button>
+                                        <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                                            {idx + 1}
+                                        </div>
                                     </div>
                                 ))}
 

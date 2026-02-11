@@ -39,6 +39,7 @@ export interface Listing {
     location: string;
     description: string;
     isSold: boolean;
+    status: 'ACTIVE' | 'RESERVED' | 'SOLD';
     views: number;
     createdAt: string;
     updatedAt: string;
@@ -95,6 +96,7 @@ export interface ListingFilters {
     make?: string;
     fuelType?: string;
     transmission?: string;
+    bodyType?: string;
     location?: string;
     search?: string;
     sortBy?: 'newest' | 'price_asc' | 'price_desc' | 'views';

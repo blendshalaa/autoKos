@@ -1,17 +1,52 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapPinIcon, BoltIcon } from '@heroicons/react/24/outline';
+import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
+import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline';
 import type { Listing } from "../../types/definitions";
 import { formatPrice, formatNumber, getImageUrl } from '../../utils/format';
+import { useAuthStore } from '../../store/authStore';
+import toast from 'react-hot-toast';
+import api from '../../services/api';
 
 interface ListingCardProps {
     listing: Listing;
+    isFavorited?: boolean;
+    onToggleFavorite?: (listingId: string) => void;
 }
 
-export const ListingCard: React.FC<ListingCardProps> = ({ listing }) => {
+export const ListingCard: React.FC<ListingCardProps> = ({ listing, isFavorited = false, onToggleFavorite }) => {
+    const { user } = useAuthStore();
     const mainImage = listing.images && listing.images.length > 0
         ? listing.images.sort((a, b) => a.order - b.order)[0].thumbnailUrl
         : null;
+
+    const statusBadge = listing.status && listing.status !== 'ACTIVE' ? (
+        <div className={`absolute top-2 left-2 px-2 py-1 rounded text-xs font-bold text-white ${listing.status === 'RESERVED' ? 'bg-amber-500' : 'bg-red-600'
+            }`}>
+            {listing.status === 'RESERVED' ? 'REZERVUAR' : 'SHITUR'}
+        </div>
+    ) : null;
+
+    const handleFavoriteClick = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!user) {
+            toast.error('Ju lutem hyni në llogari për të ruajtur shpallje');
+            return;
+        }
+        if (onToggleFavorite) {
+            onToggleFavorite(listing.id);
+        } else {
+            try {
+                await api.post(`/favorites/${listing.id}`);
+                toast.success(isFavorited ? 'U hoq nga të ruajturat' : 'U ruajt me sukses');
+                // Force re-render not possible without state — parent handles it
+            } catch (error) {
+                toast.error('Dështoi ruajtja');
+            }
+        }
+    };
 
     return (
         <Link to={`/listings/${listing.id}`} className="group block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden border border-gray-100">
@@ -28,9 +63,23 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing }) => {
                         No Image
                     </div>
                 )}
+                {statusBadge}
                 <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
                     {listing.year}
                 </div>
+                {user && (
+                    <button
+                        onClick={handleFavoriteClick}
+                        className="absolute top-2 right-2 p-1.5 rounded-full bg-white bg-opacity-80 hover:bg-opacity-100 transition-all shadow-sm"
+                        title={isFavorited ? 'Hiq nga të ruajturat' : 'Ruaj shpalljen'}
+                    >
+                        {isFavorited ? (
+                            <HeartSolid className="h-5 w-5 text-red-500" />
+                        ) : (
+                            <HeartOutline className="h-5 w-5 text-gray-600 hover:text-red-400" />
+                        )}
+                    </button>
+                )}
             </div>
 
             <div className="p-4">

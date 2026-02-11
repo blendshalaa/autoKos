@@ -53,6 +53,8 @@ export const CreateListingPage: React.FC = () => {
         }
     };
 
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
     const removeImage = (index: number) => {
         setImages(prev => prev.filter((_, i) => i !== index));
         setPreviews(prev => {
@@ -61,6 +63,34 @@ export const CreateListingPage: React.FC = () => {
             URL.revokeObjectURL(prev[index]);
             return newPreviews;
         });
+    };
+
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+        setDraggedIndex(index);
+        e.dataTransfer.effectAllowed = "move";
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+    };
+
+    const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+        e.preventDefault();
+        if (draggedIndex === null || draggedIndex === dropIndex) return;
+
+        const newImages = [...images];
+        const newPreviews = [...previews];
+
+        const [movedImage] = newImages.splice(draggedIndex, 1);
+        const [movedPreview] = newPreviews.splice(draggedIndex, 1);
+
+        newImages.splice(dropIndex, 0, movedImage);
+        newPreviews.splice(dropIndex, 0, movedPreview);
+
+        setImages(newImages);
+        setPreviews(newPreviews);
+        setDraggedIndex(null);
     };
 
     const onSubmit = async (data: CreateListingFormData) => {
@@ -244,7 +274,14 @@ export const CreateListingPage: React.FC = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-2">Fotot (Max 10)</label>
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
                                 {previews.map((src, idx) => (
-                                    <div key={idx} className="relative group aspect-w-16 aspect-h-12 bg-gray-100 rounded-lg overflow-hidden h-24">
+                                    <div
+                                        key={idx}
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, idx)}
+                                        onDragOver={(e) => handleDragOver(e)}
+                                        onDrop={(e) => handleDrop(e, idx)}
+                                        className={`relative group aspect-w-16 aspect-h-12 bg-gray-100 rounded-lg overflow-hidden h-24 cursor-move ${draggedIndex === idx ? 'opacity-50' : ''}`}
+                                    >
                                         <img src={src} alt="preview" className="object-cover w-full h-full" />
                                         <button
                                             type="button"
@@ -253,6 +290,9 @@ export const CreateListingPage: React.FC = () => {
                                         >
                                             <XMarkIcon className="h-4 w-4" />
                                         </button>
+                                        <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                                            {idx + 1}
+                                        </div>
                                     </div>
                                 ))}
 

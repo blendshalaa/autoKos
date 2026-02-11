@@ -107,7 +107,7 @@ const MessagesPage: React.FC = () => {
         return () => {
             isMounted = false;
         };
-    }, [selectedUserId]);
+    }, [selectedUserId, conversations]);
 
     // Listen for incoming messages
     useEffect(() => {

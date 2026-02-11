@@ -1,21 +1,32 @@
-import React, { Fragment } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, Transition } from '@headlessui/react'; // Need to install headlessui later or implement custom dropdown
-import { Bars3Icon, XMarkIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, XMarkIcon, UserCircleIcon, HeartIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../store/authStore';
 import { getImageUrl } from '../../utils/format';
 import { Button } from '../common/Button';
-
-// Mimicking Headless UI for now since I forgot to add it to package.json
-// Or I can just use simple state for dropdowns if needed, but let's assume we'll just check if it's installed.
-// Since I can't check installed packages easily right now, I'll implement a simple dropdown manually OR 
-// I'll add headlessui to the install list. Let's add it.
+import api from '../../services/api';
 
 export const Navbar: React.FC = () => {
     const { user, isAuthenticated, logout } = useAuthStore();
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        const fetchUnread = async () => {
+            try {
+                const res = await api.get('/messages/unread-count');
+                setUnreadCount(res.data.data.count);
+            } catch (e) {
+                // ignore
+            }
+        };
+        fetchUnread();
+        const interval = setInterval(fetchUnread, 30000); // Poll every 30s
+        return () => clearInterval(interval);
+    }, [isAuthenticated]);
 
     const handleLogout = () => {
         logout();
@@ -44,58 +55,68 @@ export const Navbar: React.FC = () => {
                         </Link>
 
                         {isAuthenticated && user ? (
-                            <div className="ml-3 relative">
-                                <div>
-                                    <button
-                                        onClick={() => setIsProfileOpen(!isProfileOpen)}
-                                        className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 items-center gap-2"
-                                    >
-                                        <span className="hidden md:block text-gray-700 font-medium">{user.name}</span>
-                                        {user.avatarUrl ? (
-                                            <img
-                                                className="h-8 w-8 rounded-full object-cover"
-                                                src={getImageUrl(user.avatarUrl)}
-                                                alt={user.name}
-                                            />
-                                        ) : (
-                                            <UserCircleIcon className="h-8 w-8 text-gray-400" />
-                                        )}
-                                    </button>
-                                </div>
+                            <>
+                                {/* Favorites Icon */}
+                                <Link to="/favorites" className="relative p-2 text-gray-500 hover:text-red-500 transition-colors" title="Të Ruajtura">
+                                    <HeartIcon className="h-6 w-6" />
+                                </Link>
+
+                                {/* Messages Icon with Badge */}
+                                <Link to="/messages" className="relative p-2 text-gray-500 hover:text-blue-600 transition-colors" title="Mesazhet">
+                                    <ChatBubbleLeftRightIcon className="h-6 w-6" />
+                                    {unreadCount > 0 && (
+                                        <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform bg-red-500 rounded-full min-w-[18px]">
+                                            {unreadCount > 99 ? '99+' : unreadCount}
+                                        </span>
+                                    )}
+                                </Link>
 
                                 {/* Profile Dropdown */}
-                                {isProfileOpen && (
-                                    <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
-                                        <Link
-                                            to={`/profile/${user.id}`}
-                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                            onClick={() => setIsProfileOpen(false)}
-                                        >
-                                            Profili Im
-                                        </Link>
-                                        <Link
-                                            to="/my-listings"
-                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                            onClick={() => setIsProfileOpen(false)}
-                                        >
-                                            Shpalljet e Mia
-                                        </Link>
-                                        <Link
-                                            to="/messages"
-                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                            onClick={() => setIsProfileOpen(false)}
-                                        >
-                                            Mesazhet
-                                        </Link>
+                                <div className="ml-1 relative">
+                                    <div>
                                         <button
-                                            onClick={handleLogout}
-                                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                            onClick={() => setIsProfileOpen(!isProfileOpen)}
+                                            className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 items-center gap-2"
                                         >
-                                            Dil
+                                            <span className="hidden md:block text-gray-700 font-medium">{user.name}</span>
+                                            {user.avatarUrl ? (
+                                                <img
+                                                    className="h-8 w-8 rounded-full object-cover"
+                                                    src={getImageUrl(user.avatarUrl)}
+                                                    alt={user.name}
+                                                />
+                                            ) : (
+                                                <UserCircleIcon className="h-8 w-8 text-gray-400" />
+                                            )}
                                         </button>
                                     </div>
-                                )}
-                            </div>
+
+                                    {isProfileOpen && (
+                                        <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                            <Link
+                                                to={`/profile/${user.id}`}
+                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                onClick={() => setIsProfileOpen(false)}
+                                            >
+                                                Profili Im
+                                            </Link>
+                                            <Link
+                                                to="/my-listings"
+                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                onClick={() => setIsProfileOpen(false)}
+                                            >
+                                                Shpalljet e Mia
+                                            </Link>
+                                            <button
+                                                onClick={handleLogout}
+                                                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                            >
+                                                Dil
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
                         ) : (
                             <div className="flex space-x-2">
                                 <Link to="/login">
@@ -110,6 +131,16 @@ export const Navbar: React.FC = () => {
 
                     {/* Mobile menu button */}
                     <div className="flex item-center sm:hidden items-center">
+                        {isAuthenticated && user && (
+                            <Link to="/messages" className="relative p-2 mr-1 text-gray-500 hover:text-blue-600" title="Mesazhet">
+                                <ChatBubbleLeftRightIcon className="h-6 w-6" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform bg-red-500 rounded-full min-w-[18px]">
+                                        {unreadCount > 99 ? '99+' : unreadCount}
+                                    </span>
+                                )}
+                            </Link>
+                        )}
                         <button
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                             className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
@@ -180,11 +211,23 @@ export const Navbar: React.FC = () => {
                                     Shpalljet e Mia
                                 </Link>
                                 <Link
-                                    to="/messages"
+                                    to="/favorites"
                                     className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
                                     onClick={() => setIsMenuOpen(false)}
                                 >
+                                    ❤️ Të Ruajtura
+                                </Link>
+                                <Link
+                                    to="/messages"
+                                    className="flex items-center px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
                                     Mesazhet
+                                    {unreadCount > 0 && (
+                                        <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full">
+                                            {unreadCount}
+                                        </span>
+                                    )}
                                 </Link>
                                 <button
                                     onClick={handleLogout}
