@@ -370,3 +370,31 @@ export const deleteImageFromListing = async (req: AuthRequest, res: Response): P
         sendError(res, 'Failed to delete image', 500);
     }
 };
+
+export const reorderImages = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { images } = req.body; // Array of { id: string, order: number }
+
+        if (!Array.isArray(images)) {
+            sendError(res, 'Invalid images data', 400);
+            return;
+        }
+
+        // Verify ownership (middleware handles it, but good to be safe)
+        // Update each image order in transaction
+        await prisma.$transaction(
+            images.map((img: { id: string; order: number }) =>
+                prisma.listingImage.updateMany({
+                    where: { id: img.id, listingId: id },
+                    data: { order: img.order },
+                })
+            )
+        );
+
+        sendSuccess(res, { message: 'Images reordered successfully' });
+    } catch (error) {
+        console.error('ReorderImages error:', error);
+        sendError(res, 'Failed to reorder images', 500);
+    }
+};

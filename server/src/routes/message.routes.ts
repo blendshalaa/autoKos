@@ -4,6 +4,7 @@ import {
     getConversations,
     getConversation,
     markAsRead,
+    getUnreadCount,
 } from '../controllers/message.controller';
 import { sendMessageValidation } from '../validators/message';
 import { validate } from '../middleware/validate';
@@ -22,5 +23,8 @@ router.get('/conversations/:userId', authMiddleware, getConversation);
 
 // PATCH /api/messages/:id/read
 router.patch('/:id/read', authMiddleware, markAsRead);
+
+// GET /api/messages/unread-count
+router.get('/unread-count', authMiddleware, getUnreadCount);
 
 export default router;

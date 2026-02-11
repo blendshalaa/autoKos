@@ -47,6 +47,10 @@ export const initializeSocket = (httpServer: HttpServer) => {
         socket.on('send_message', async (data) => {
             const { receiverId, listingId, content } = data;
 
+            if (receiverId === userId) {
+                socket.emit('message_error', { error: 'Cannot send message to yourself' });
+                return;
+            }
             try {
                 // Save message to database
                 const newMessage = await prisma.message.create({

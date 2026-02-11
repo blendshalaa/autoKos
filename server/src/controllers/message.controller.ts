@@ -173,6 +173,13 @@ export const getConversation = async (req: AuthRequest, res: Response): Promise<
                         avatarUrl: true,
                     },
                 },
+                receiver: {
+                    select: {
+                        id: true,
+                        name: true,
+                        avatarUrl: true,
+                    },
+                },
                 listing: {
                     select: {
                         id: true,
@@ -247,5 +254,26 @@ export const markAsRead = async (req: AuthRequest, res: Response): Promise<void>
     } catch (error) {
         console.error('MarkAsRead error:', error);
         sendError(res, 'Failed to mark message as read', 500);
+    }
+};
+
+export const getUnreadCount = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            sendError(res, 'Authentication required', 401);
+            return;
+        }
+
+        const count = await prisma.message.count({
+            where: {
+                receiverId: req.user.id,
+                read: false,
+            },
+        });
+
+        sendSuccess(res, { count });
+    } catch (error) {
+        console.error('GetUnreadCount error:', error);
+        sendError(res, 'Failed to get unread count', 500);
     }
 };

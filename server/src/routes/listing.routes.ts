@@ -7,6 +7,7 @@ import {
     deleteListing,
     uploadImages,
     deleteImageFromListing,
+    reorderImages,
 } from '../controllers/listing.controller';
 import { reportListing } from '../controllers/report.controller';
 import { createListingValidation, updateListingValidation } from '../validators/listing';
@@ -55,6 +56,14 @@ router.delete(
     authMiddleware,
     listingOwnerMiddleware,
     deleteImageFromListing
+);
+
+// PUT /api/listings/:id/images/reorder
+router.put(
+    '/:id/images/reorder',
+    authMiddleware,
+    listingOwnerMiddleware,
+    reorderImages
 );
 
 // POST /api/listings/:id/report
