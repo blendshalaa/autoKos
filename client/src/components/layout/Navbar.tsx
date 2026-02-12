@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bars3Icon, XMarkIcon, UserCircleIcon, HeartIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, XMarkIcon, UserCircleIcon, HeartIcon, ChatBubbleLeftRightIcon, ArrowPathRoundedSquareIcon } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../store/authStore';
+import { useCompareStore } from '../../store/compareStore';
 import { getImageUrl } from '../../utils/format';
 import { Button } from '../common/Button';
 import api from '../../services/api';
 
 export const Navbar: React.FC = () => {
     const { user, isAuthenticated, logout } = useAuthStore();
+    const { items: compareItems } = useCompareStore();
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const [isProfileOpen, setIsProfileOpen] = React.useState(false);
@@ -61,6 +63,16 @@ export const Navbar: React.FC = () => {
                                     <HeartIcon className="h-6 w-6" />
                                 </Link>
 
+                                {/* Compare Icon */}
+                                <Link to="/compare" className="relative p-2 text-gray-500 hover:text-blue-600 transition-colors" title="Krahaso">
+                                    <ArrowPathRoundedSquareIcon className="h-6 w-6" />
+                                    {compareItems.length > 0 && (
+                                        <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform bg-blue-500 rounded-full min-w-[18px]">
+                                            {compareItems.length}
+                                        </span>
+                                    )}
+                                </Link>
+
                                 {/* Messages Icon with Badge */}
                                 <Link to="/messages" className="relative p-2 text-gray-500 hover:text-blue-600 transition-colors" title="Mesazhet">
                                     <ChatBubbleLeftRightIcon className="h-6 w-6" />
@@ -93,6 +105,17 @@ export const Navbar: React.FC = () => {
 
                                     {isProfileOpen && (
                                         <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                            {/* Admin Link */}
+                                            {user.role === 'ADMIN' && (
+                                                <Link
+                                                    to="/admin"
+                                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                    onClick={() => setIsProfileOpen(false)}
+                                                >
+                                                    Admin Dashboard
+                                                </Link>
+                                            )}
+
                                             <Link
                                                 to={`/profile/${user.id}`}
                                                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -157,108 +180,110 @@ export const Navbar: React.FC = () => {
             </div>
 
             {/* Mobile Menu */}
-            {isMenuOpen && (
-                <div className="sm:hidden block bg-white border-t border-gray-200">
-                    <div className="pt-2 pb-3 space-y-1">
-                        <Link
-                            to="/"
-                            className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"
-                            onClick={() => setIsMenuOpen(false)}
-                        >
-                            Ballina
-                        </Link>
-                        <Link
-                            to="/listings/new"
-                            className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"
-                            onClick={() => setIsMenuOpen(false)}
-                        >
-                            Shto Makinë
-                        </Link>
-                    </div>
+            {
+                isMenuOpen && (
+                    <div className="sm:hidden block bg-white border-t border-gray-200">
+                        <div className="pt-2 pb-3 space-y-1">
+                            <Link
+                                to="/"
+                                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                Ballina
+                            </Link>
+                            <Link
+                                to="/listings/new"
+                                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                Shto Makinë
+                            </Link>
+                        </div>
 
-                    {isAuthenticated && user ? (
-                        <div className="pt-4 pb-4 border-t border-gray-200">
-                            <div className="flex items-center px-4">
-                                <div className="flex-shrink-0">
-                                    {user.avatarUrl ? (
-                                        <img
-                                            className="h-10 w-10 rounded-full object-cover"
-                                            src={getImageUrl(user.avatarUrl)}
-                                            alt={user.name}
-                                        />
-                                    ) : (
-                                        <UserCircleIcon className="h-10 w-10 text-gray-400" />
-                                    )}
+                        {isAuthenticated && user ? (
+                            <div className="pt-4 pb-4 border-t border-gray-200">
+                                <div className="flex items-center px-4">
+                                    <div className="flex-shrink-0">
+                                        {user.avatarUrl ? (
+                                            <img
+                                                className="h-10 w-10 rounded-full object-cover"
+                                                src={getImageUrl(user.avatarUrl)}
+                                                alt={user.name}
+                                            />
+                                        ) : (
+                                            <UserCircleIcon className="h-10 w-10 text-gray-400" />
+                                        )}
+                                    </div>
+                                    <div className="ml-3">
+                                        <div className="text-base font-medium text-gray-800">{user.name}</div>
+                                        <div className="text-sm font-medium text-gray-500">{user.email}</div>
+                                    </div>
                                 </div>
-                                <div className="ml-3">
-                                    <div className="text-base font-medium text-gray-800">{user.name}</div>
-                                    <div className="text-sm font-medium text-gray-500">{user.email}</div>
+                                <div className="mt-3 space-y-1">
+                                    <Link
+                                        to={`/profile/${user.id}`}
+                                        className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                                        onClick={() => setIsMenuOpen(false)}
+                                    >
+                                        Profili Im
+                                    </Link>
+                                    <Link
+                                        to="/my-listings"
+                                        className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                                        onClick={() => setIsMenuOpen(false)}
+                                    >
+                                        Shpalljet e Mia
+                                    </Link>
+                                    <Link
+                                        to="/favorites"
+                                        className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                                        onClick={() => setIsMenuOpen(false)}
+                                    >
+                                        ❤️ Të Ruajtura
+                                    </Link>
+                                    <Link
+                                        to="/messages"
+                                        className="flex items-center px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                                        onClick={() => setIsMenuOpen(false)}
+                                    >
+                                        Mesazhet
+                                        {unreadCount > 0 && (
+                                            <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full">
+                                                {unreadCount}
+                                            </span>
+                                        )}
+                                    </Link>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="block w-full text-left px-4 py-2 text-base font-medium text-red-600 hover:bg-gray-100"
+                                    >
+                                        Dil
+                                    </button>
                                 </div>
                             </div>
-                            <div className="mt-3 space-y-1">
-                                <Link
-                                    to={`/profile/${user.id}`}
-                                    className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                                    onClick={() => setIsMenuOpen(false)}
-                                >
-                                    Profili Im
-                                </Link>
-                                <Link
-                                    to="/my-listings"
-                                    className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                                    onClick={() => setIsMenuOpen(false)}
-                                >
-                                    Shpalljet e Mia
-                                </Link>
-                                <Link
-                                    to="/favorites"
-                                    className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                                    onClick={() => setIsMenuOpen(false)}
-                                >
-                                    ❤️ Të Ruajtura
-                                </Link>
-                                <Link
-                                    to="/messages"
-                                    className="flex items-center px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                                    onClick={() => setIsMenuOpen(false)}
-                                >
-                                    Mesazhet
-                                    {unreadCount > 0 && (
-                                        <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full">
-                                            {unreadCount}
-                                        </span>
-                                    )}
-                                </Link>
-                                <button
-                                    onClick={handleLogout}
-                                    className="block w-full text-left px-4 py-2 text-base font-medium text-red-600 hover:bg-gray-100"
-                                >
-                                    Dil
-                                </button>
+                        ) : (
+                            <div className="pt-4 pb-4 border-t border-gray-200">
+                                <div className="space-y-1">
+                                    <Link
+                                        to="/login"
+                                        className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                                        onClick={() => setIsMenuOpen(false)}
+                                    >
+                                        Kyçu
+                                    </Link>
+                                    <Link
+                                        to="/register"
+                                        className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                                        onClick={() => setIsMenuOpen(false)}
+                                    >
+                                        Regjistrohu
+                                    </Link>
+                                </div>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="pt-4 pb-4 border-t border-gray-200">
-                            <div className="space-y-1">
-                                <Link
-                                    to="/login"
-                                    className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                                    onClick={() => setIsMenuOpen(false)}
-                                >
-                                    Kyçu
-                                </Link>
-                                <Link
-                                    to="/register"
-                                    className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                                    onClick={() => setIsMenuOpen(false)}
-                                >
-                                    Regjistrohu
-                                </Link>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-        </nav>
+                        )}
+                    </div>
+                )
+            }
+        </nav >
     );
 };

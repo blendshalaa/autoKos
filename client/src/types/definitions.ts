@@ -12,6 +12,8 @@ export interface User {
     phone?: string | null;
     bio?: string | null;
     avatarUrl?: string | null;
+    role: 'USER' | 'ADMIN';
+    isBanned: boolean;
     createdAt: string;
 }
 
@@ -31,6 +33,7 @@ export interface Listing {
     model: string;
     year: number;
     price: number;
+    previousPrice?: number;
     mileage: number;
     fuelType: string;
     transmission: string;
@@ -40,6 +43,7 @@ export interface Listing {
     description: string;
     isSold: boolean;
     status: 'ACTIVE' | 'RESERVED' | 'SOLD';
+    expiresAt?: string | null;
     views: number;
     createdAt: string;
     updatedAt: string;

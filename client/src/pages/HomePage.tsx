@@ -59,8 +59,13 @@ export const HomePage: React.FC = () => {
 
             // Fetch favorites if logged in
             if (isAuthenticated) {
-                const favRes = await api.get<ApiResponse<{ favoriteIds: string[] }>>('/favorites/ids');
-                setFavoriteIds(favRes.data.data.favoriteIds);
+                try {
+                    const favRes = await api.get<ApiResponse<{ favoriteIds: string[] }>>('/favorites/ids');
+                    setFavoriteIds(favRes.data.data.favoriteIds);
+                } catch (error) {
+                    console.error('Failed to fetch favorites', error);
+                    // Don't fail the whole request, just don't show favorites
+                }
             }
         } catch (error) {
             console.error('Failed to fetch listings', error);

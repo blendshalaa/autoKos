@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useAuthStore } from '../store/authStore';
 
 const api = axios.create({
     baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`,
@@ -32,6 +33,18 @@ api.interceptors.response.use(
                 // We might want to trigger a global state update here or use an event
                 // to redirect the user to login. For now, rely on auth checking in routes.
             }
+        }
+        return Promise.reject(error);
+    }
+);
+
+// Response interceptor
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Auto logout on 401
+            useAuthStore.getState().logout();
         }
         return Promise.reject(error);
     }

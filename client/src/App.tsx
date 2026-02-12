@@ -12,6 +12,8 @@ import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
 import { EditProfilePage } from './pages/profile/EditProfilePage';
 import { FavoritesPage } from './pages/FavoritesPage';
+import { ComparePage } from './pages/ComparePage';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
 import MessagesPage from './pages/MessagesPage';
 import { useAuthStore } from './store/authStore';
 import api from './services/api';
@@ -65,6 +67,12 @@ const App: React.FC = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/listings/:id" element={<ListingDetailPage />} />
+        <Route path="/compare" element={<ComparePage />} />
+        <Route path="/admin" element={
+          <ProtectedRoute>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
         <Route path="/profile/:userId" element={<ProfilePage />} />
         <Route path="/profile/edit" element={
           <ProtectedRoute>

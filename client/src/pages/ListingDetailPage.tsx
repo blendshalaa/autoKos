@@ -5,7 +5,7 @@ import {
     MapPinIcon,
     CalendarIcon,
     BoltIcon,
-    CogIcon, // Transmission replacement
+    CogIcon,
     UserCircleIcon,
     PhoneIcon,
     ChatBubbleLeftRightIcon,
@@ -13,7 +13,9 @@ import {
     CheckBadgeIcon,
     XMarkIcon,
     ChevronLeftIcon,
-    ChevronRightIcon
+    ChevronRightIcon,
+    ArrowPathIcon,
+    ClockIcon
 } from '@heroicons/react/24/outline';
 import api from '../services/api';
 import type { Listing, User, ApiResponse } from '../types/definitions';
@@ -21,6 +23,9 @@ import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/common/Button';
 import { formatPrice, formatNumber, getImageUrl } from '../utils/format';
 import { useAuthStore } from '../store/authStore';
+import { useRecentlyViewedStore } from '../store/recentlyViewedStore';
+import { SimilarListings } from '../components/listings/SimilarListings';
+import { RecentlyViewed } from '../components/listings/RecentlyViewed';
 
 export const ListingDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -53,6 +58,8 @@ export const ListingDetailPage: React.FC = () => {
         setActiveImage(sorted[prevIndex].imageUrl);
     };
 
+    const { addId } = useRecentlyViewedStore();
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!isLightboxOpen) return;
@@ -63,6 +70,12 @@ export const ListingDetailPage: React.FC = () => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isLightboxOpen, activeImage, listing]);
+
+    useEffect(() => {
+        if (id) {
+            addId(id);
+        }
+    }, [id, addId]);
 
     useEffect(() => {
         const fetchListing = async () => {
@@ -117,7 +130,7 @@ export const ListingDetailPage: React.FC = () => {
             try {
                 await api.delete(`/listings/${id}`);
                 toast.success('Shpallja u fshi me sukses!');
-                navigate('/'); // Or to profile
+                navigate('/');
             } catch (error) {
                 console.error('Failed to delete listing', error);
                 toast.error('Dështoi fshirja e shpalljes.');
@@ -155,20 +168,16 @@ export const ListingDetailPage: React.FC = () => {
         ? (new Date().getTime() - new Date(listing.user.createdAt).getTime()) < (30 * 24 * 60 * 60 * 1000)
         : false;
 
-
-
     return (
         <Layout>
             <div className="container-narrow py-8">
-                {/* ... (grid layout) */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
                     {/* Left Column: Images & Details */}
                     <div className="lg:col-span-2 space-y-8">
                         {/* Image Gallery */}
                         <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                             <div
-                                className="aspect-w-16 aspect-h-10 bg-gray-100 h-96 flex items-center justify-center cursor-zoom-in relative group"
+                                className="bg-gray-100 h-96 flex items-center justify-center cursor-zoom-in relative group"
                                 onClick={() => setIsLightboxOpen(true)}
                             >
                                 {activeImage ? (
@@ -238,7 +247,6 @@ export const ListingDetailPage: React.FC = () => {
                             )}
 
                             <div className="mt-6 space-y-3">
-                                {/* Details list... can keep existing structure or replace if simple */}
                                 <div className="flex items-center text-gray-600">
                                     <CalendarIcon className="h-5 w-5 mr-3 text-gray-400" />
                                     <span>Viti {listing.year}</span>
@@ -293,9 +301,38 @@ export const ListingDetailPage: React.FC = () => {
                                 </div>
                             </div>
 
+                            {/* Expiry Warning for Owner */}
+                            {isOwner && listing.expiresAt && (
+                                <div className="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+                                    <div className="flex items-center text-blue-800 font-medium mb-1">
+                                        <ClockIcon className="h-5 w-5 mr-2" />
+                                        Skadon më: {new Date(listing.expiresAt).toLocaleDateString()}
+                                    </div>
+                                    {new Date(listing.expiresAt) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) && (
+                                        <p className="text-sm text-blue-600 mb-2">
+                                            Shpallja juaj po skadon. Rinovoni tani për ta mbajtur aktive.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Actions */}
                             {!isOwner ? (
                                 <>
+                                    {/* Admin Actions */}
+                                    {user?.role === 'ADMIN' && (
+                                        <div className="mb-4 pt-4 border-t">
+                                            <p className="text-xs font-bold text-gray-500 uppercase mb-2">Admin Actions</p>
+                                            <Button
+                                                variant="danger"
+                                                className="w-full mb-2"
+                                                onClick={handleDelete}
+                                            >
+                                                Fshi (Admin)
+                                            </Button>
+                                        </div>
+                                    )}
+
                                     <Button
                                         className="w-full flex items-center justify-center"
                                         onClick={handleMessageSeller}
@@ -327,6 +364,25 @@ export const ListingDetailPage: React.FC = () => {
                                     >
                                         Fshi
                                     </Button>
+
+                                    {/* Renew Button */}
+                                    <Button
+                                        className="col-span-2 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white"
+                                        onClick={async () => {
+                                            if (confirm('Dëshironi të rinovoni shpalljen për 30 ditë?')) {
+                                                try {
+                                                    await api.post(`/listings/${id}/renew`);
+                                                    toast.success('Shpallja u rinovua me sukses!');
+                                                    window.location.reload();
+                                                } catch (error) {
+                                                    toast.error('Dështoi rinovimi');
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        <ArrowPathIcon className="h-5 w-5 mr-2" />
+                                        Rinovo Shpalljen
+                                    </Button>
                                 </div>
                             )}
                         </div>
@@ -336,41 +392,33 @@ export const ListingDetailPage: React.FC = () => {
 
             {/* Lightbox Overlay */}
             {isLightboxOpen && (
-                <div className="fixed inset-0 z-[100] bg-black bg-opacity-95 flex items-center justify-center backdrop-blur-sm">
-                    {/* Close Button */}
+                <div className="fixed inset-0 z-[100] bg-black bg-opacity-90 flex items-center justify-center backdrop-blur-sm">
                     <button
                         onClick={() => setIsLightboxOpen(false)}
                         className="absolute top-4 right-4 text-white hover:text-gray-300 p-2 z-[110]"
                     >
                         <XMarkIcon className="h-8 w-8" />
                     </button>
-
-                    {/* Navigation Buttons */}
                     <button
                         onClick={handlePrevImage}
                         className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 p-2 z-[110] bg-black bg-opacity-20 hover:bg-opacity-40 rounded-full"
                     >
                         <ChevronLeftIcon className="h-8 w-8" />
                     </button>
-
                     <button
                         onClick={handleNextImage}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 p-2 z-[110] bg-black bg-opacity-20 hover:bg-opacity-40 rounded-full"
                     >
                         <ChevronRightIcon className="h-8 w-8" />
                     </button>
-
-                    {/* Main Image */}
                     <div className="w-full h-full p-4 flex items-center justify-center" onClick={() => setIsLightboxOpen(false)}>
                         <img
                             src={getImageUrl(activeImage || '')}
                             alt="Full screen"
-                            className="max-w-full max-h-full object-contain cursor-default"
+                            className="max-w-full max-h-full object-contain cursor-default relative z-[105]"
                             onClick={(e) => e.stopPropagation()}
                         />
                     </div>
-
-                    {/* Counter */}
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded-full text-sm">
                         {listing.images && (
                             `${listing.images.findIndex(img => img.imageUrl === activeImage) + 1} / ${listing.images.length}`
@@ -411,6 +459,12 @@ export const ListingDetailPage: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Similar and Recent Listings */}
+            <div className="container-narrow pb-12">
+                <SimilarListings listingId={id!} />
+                <RecentlyViewed />
+            </div>
         </Layout>
     );
 };
