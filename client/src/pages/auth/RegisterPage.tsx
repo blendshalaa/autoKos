@@ -87,7 +87,11 @@ export const RegisterPage: React.FC = () => {
                                     type="password"
                                     {...register('password', {
                                         required: 'Fjalëkalimi është i detyrueshëm',
-                                        minLength: { value: 6, message: 'Minimum 6 karaktere' }
+                                        minLength: { value: 8, message: 'Minimum 8 karaktere' },
+                                        pattern: {
+                                            value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+                                            message: 'Fjalëkalimi duhet të përmbajë shkronjë të madhe, të vogël, numër dhe simbol'
+                                        }
                                     })}
                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 h-10"
                                 />

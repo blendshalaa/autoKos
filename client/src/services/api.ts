@@ -8,6 +8,8 @@ const api = axios.create({
     },
 });
 
+console.log('API URL:', import.meta.env.VITE_API_URL || 'http://localhost:5000');
+
 // Add a request interceptor to add the auth token
 api.interceptors.request.use(
     (config) => {

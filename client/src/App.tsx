@@ -44,7 +44,6 @@ const App: React.FC = () => {
           const response = await api.get('/auth/me');
           setAuth(response.data.data.user, token);
         } catch (error) {
-          console.error("Auth check failed", error);
           localStorage.removeItem('token');
         }
       }
