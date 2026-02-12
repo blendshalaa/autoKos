@@ -8,6 +8,7 @@ import {
     uploadImages,
     deleteImageFromListing,
     reorderImages,
+    getSimilarListings,
 } from '../controllers/listing.controller';
 import { reportListing } from '../controllers/report.controller';
 import { createListingValidation, updateListingValidation } from '../validators/listing';
@@ -65,6 +66,9 @@ router.put(
     listingOwnerMiddleware,
     reorderImages
 );
+
+// GET /api/listings/:id/similar
+router.get('/:id/similar', getSimilarListings);
 
 // POST /api/listings/:id/report
 router.post('/:id/report', authMiddleware, reportValidation, validate, reportListing);

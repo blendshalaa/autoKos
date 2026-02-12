@@ -46,6 +46,7 @@ export const createListing = async (req: AuthRequest, res: Response): Promise<vo
                 color,
                 location,
                 description,
+                expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
             },
             include: {
                 user: {
@@ -98,6 +99,16 @@ export const getListings = async (req: AuthRequest, res: Response): Promise<void
             };
         }
 
+        // Filter expired listings (unless specific IDs are requested, assuming that might be for history/owners)
+        // Also if we want to allow owners to see their expired listings via this endpoint, we'd need more logic.
+        // For now, public active listings only.
+        if (!req.query.ids) {
+            where.OR = [
+                { expiresAt: { gt: new Date() } },
+                { expiresAt: null }
+            ];
+        }
+
         if (filters.minYear || filters.maxYear) {
             where.year = {
                 ...(filters.minYear && { gte: filters.minYear }),
@@ -127,6 +138,14 @@ export const getListings = async (req: AuthRequest, res: Response): Promise<void
                 { model: { contains: filters.search, mode: 'insensitive' } },
                 { description: { contains: filters.search, mode: 'insensitive' } },
             ];
+        }
+
+        // Support for filtering by IDs (e.g. Recently Viewed, Compare)
+        if (req.query.ids) {
+            const ids = (req.query.ids as string).split(',');
+            if (ids.length > 0) {
+                where.id = { in: ids };
+            }
         }
 
         // Build orderBy
@@ -176,6 +195,57 @@ export const getListings = async (req: AuthRequest, res: Response): Promise<void
     } catch (error) {
         console.error('GetListings error:', error);
         sendError(res, 'Failed to get listings', 500);
+    }
+};
+
+export const getSimilarListings = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        const listing = await prisma.listing.findUnique({ where: { id } });
+        if (!listing) {
+            sendError(res, 'Listing not found', 404);
+            return;
+        }
+
+        const similar = await prisma.listing.findMany({
+            where: {
+                id: { not: id },
+                status: 'ACTIVE',
+                isSold: false,
+                OR: [
+                    { make: listing.make },
+                    { bodyType: listing.bodyType },
+                    {
+                        price: {
+                            gte: listing.price * 0.8,
+                            lte: listing.price * 1.2
+                        }
+                    }
+                ]
+            },
+            take: 4,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                images: {
+                    take: 1,
+                    orderBy: { order: 'asc' },
+                },
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        avatarUrl: true,
+                        bio: true
+                    }
+                }
+            }
+        });
+
+        sendSuccess(res, { listings: similar });
+    } catch (error) {
+        console.error('GetSimilarListings error:', error);
+        sendError(res, 'Failed to fetch similar listings', 500);
     }
 };
 
@@ -230,6 +300,19 @@ export const updateListing = async (req: AuthRequest, res: Response): Promise<vo
             fuelType, transmission, bodyType, color, location, description, isSold,
         } = req.body;
 
+        // Check if price changed to set previousPrice
+        let previousPrice: number | undefined;
+        if (price) {
+            const currentListing = await prisma.listing.findUnique({
+                where: { id },
+                select: { price: true }
+            });
+
+            if (currentListing && parseInt(price) < currentListing.price) {
+                previousPrice = currentListing.price;
+            }
+        }
+
         const listing = await prisma.listing.update({
             where: { id },
             data: {
@@ -237,6 +320,7 @@ export const updateListing = async (req: AuthRequest, res: Response): Promise<vo
                 ...(model && { model }),
                 ...(year && { year: parseInt(year) }),
                 ...(price && { price: parseInt(price) }),
+                ...(previousPrice && { previousPrice }),
                 ...(mileage !== undefined && { mileage: parseInt(mileage) }),
                 ...(fuelType && { fuelType }),
                 ...(transmission && { transmission }),
@@ -396,5 +480,34 @@ export const reorderImages = async (req: AuthRequest, res: Response): Promise<vo
     } catch (error) {
         console.error('ReorderImages error:', error);
         sendError(res, 'Failed to reorder images', 500);
+    }
+};
+
+export const renewListing = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const listing = await prisma.listing.findUnique({ where: { id } });
+
+        if (!listing) return sendError(res, 'Listing not found', 404);
+
+        // Allow owner or admin
+        if (listing.userId !== req.user?.id && req.user?.role !== 'ADMIN') {
+            return sendError(res, 'Unauthorized', 403);
+        }
+
+        const newExpiry = new Date();
+        newExpiry.setDate(newExpiry.getDate() + 30);
+
+        const updated = await prisma.listing.update({
+            where: { id },
+            data: {
+                expiresAt: newExpiry,
+                status: 'ACTIVE'
+            }
+        });
+
+        sendSuccess(res, updated);
+    } catch (error) {
+        sendError(res, 'Failed to renew listing');
     }
 };

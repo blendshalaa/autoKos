@@ -1,9 +1,15 @@
 import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { env } from './config/env';
 import routes from './routes';
+import userRoutes from './routes/user.routes';
+import listingRoutes from './routes/listing.routes';
+import messageRoutes from './routes/message.routes';
+import favoriteRoutes from './routes/favorite.routes';
+import adminRoutes from './routes/admin.routes';
 import { errorHandler, notFoundHandler } from './middleware/error';
 
 const app: Express = express();
@@ -20,6 +26,19 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// Global Rate Limiting
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 1000, // Limit each IP to 1000 requests per windowMs (increased for dev)
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        error: 'Too many requests, please try again later.'
+    }
+});
+app.use('/api', globalLimiter);
 
 // Body parsers
 app.use(express.json({ limit: '10mb' }));

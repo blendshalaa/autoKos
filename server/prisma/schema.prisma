@@ -10,6 +10,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
   id               String    @id @default(uuid())
   email            String    @unique
@@ -19,7 +24,9 @@ model User {
   phone            String?
   bio              String?
   avatarUrl        String?
+  role             Role      @default(USER)
   isVerified       Boolean   @default(false)
+  isBanned         Boolean   @default(false)
   verificationToken String?
   createdAt        DateTime  @default(now())
   listings         Listing[]
@@ -37,6 +44,7 @@ model Listing {
   model        String
   year         Int
   price        Int
+  previousPrice Int?
   mileage      Int
   fuelType     String
   transmission String
@@ -46,6 +54,9 @@ model Listing {
   description  String         @db.Text
   status       String         @default("ACTIVE")
   isSold       Boolean        @default(false)
+  expiresAt    DateTime?      // Optional for now to avoid breaking existing without defaults, or set default tomorrow?
+                                // Better to make it optional and fill it logic-wise, or default to now + 30 days.
+                                // Prisma doesn't support dynamic defaults easily. I'll make it optional and handle logic.
   views        Int            @default(0)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt

@@ -27,7 +27,7 @@ export const listingOwnerMiddleware = async (
             return;
         }
 
-        if (listing.userId !== userId) {
+        if (listing.userId !== userId && req.user?.role !== 'ADMIN') {
             sendError(res, 'You do not have permission to modify this listing', 403);
             return;
         }
