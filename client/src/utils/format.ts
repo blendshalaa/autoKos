@@ -20,7 +20,13 @@ export const formatDate = (dateString: string): string => {
 };
 
 export const getImageUrl = (url?: string | null): string => {
-    if (!url) return ''; // Example placeholder could be added here
+    if (!url) return '';
     if (url.startsWith('http')) return url;
-    return `http://localhost:5000${url}`;
+
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    // Remove trailing slash from baseUrl if it exists, and ensured url starts with /
+    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+
+    return `${cleanBaseUrl}${cleanUrl}`;
 };
