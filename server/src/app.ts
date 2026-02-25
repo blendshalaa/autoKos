@@ -5,11 +5,6 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { env } from './config/env';
 import routes from './routes';
-import userRoutes from './routes/user.routes';
-import listingRoutes from './routes/listing.routes';
-import messageRoutes from './routes/message.routes';
-import favoriteRoutes from './routes/favorite.routes';
-import adminRoutes from './routes/admin.routes';
 import { errorHandler, notFoundHandler } from './middleware/error';
 
 const app: Express = express();

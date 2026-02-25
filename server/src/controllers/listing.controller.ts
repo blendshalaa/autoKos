@@ -92,6 +92,9 @@ export const getListings = async (req: AuthRequest, res: Response): Promise<void
             isSold: false,
         };
 
+        // Use AND array to safely combine multiple OR conditions
+        const andConditions: Prisma.ListingWhereInput[] = [];
+
         if (filters.minPrice || filters.maxPrice) {
             where.price = {
                 ...(filters.minPrice && { gte: filters.minPrice }),
@@ -99,14 +102,14 @@ export const getListings = async (req: AuthRequest, res: Response): Promise<void
             };
         }
 
-        // Filter expired listings (unless specific IDs are requested, assuming that might be for history/owners)
-        // Also if we want to allow owners to see their expired listings via this endpoint, we'd need more logic.
-        // For now, public active listings only.
+        // Filter expired listings (unless specific IDs are requested)
         if (!req.query.ids) {
-            where.OR = [
-                { expiresAt: { gt: new Date() } },
-                { expiresAt: null }
-            ];
+            andConditions.push({
+                OR: [
+                    { expiresAt: { gt: new Date() } },
+                    { expiresAt: null }
+                ]
+            });
         }
 
         if (filters.minYear || filters.maxYear) {
@@ -133,11 +136,17 @@ export const getListings = async (req: AuthRequest, res: Response): Promise<void
         }
 
         if (filters.search) {
-            where.OR = [
-                { make: { contains: filters.search, mode: 'insensitive' } },
-                { model: { contains: filters.search, mode: 'insensitive' } },
-                { description: { contains: filters.search, mode: 'insensitive' } },
-            ];
+            andConditions.push({
+                OR: [
+                    { make: { contains: filters.search, mode: 'insensitive' } },
+                    { model: { contains: filters.search, mode: 'insensitive' } },
+                    { description: { contains: filters.search, mode: 'insensitive' } },
+                ]
+            });
+        }
+
+        if (andConditions.length > 0) {
+            where.AND = andConditions;
         }
 
         // Support for filtering by IDs (e.g. Recently Viewed, Compare)
@@ -483,16 +492,20 @@ export const reorderImages = async (req: AuthRequest, res: Response): Promise<vo
     }
 };
 
-export const renewListing = async (req: AuthRequest, res: Response) => {
+export const renewListing = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
         const listing = await prisma.listing.findUnique({ where: { id } });
 
-        if (!listing) return sendError(res, 'Listing not found', 404);
+        if (!listing) {
+            sendError(res, 'Listing not found', 404);
+            return;
+        }
 
         // Allow owner or admin
         if (listing.userId !== req.user?.id && req.user?.role !== 'ADMIN') {
-            return sendError(res, 'Unauthorized', 403);
+            sendError(res, 'Unauthorized', 403);
+            return;
         }
 
         const newExpiry = new Date();
