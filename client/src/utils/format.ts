@@ -23,7 +23,12 @@ export const getImageUrl = (url?: string | null): string => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
 
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const envApiUrl = import.meta.env.VITE_API_URL;
+    if (!envApiUrl) {
+        console.warn('VITE_API_URL is not defined, falling back to localhost for image:', url);
+    }
+
+    const baseUrl = envApiUrl || 'http://localhost:5000';
     // Remove trailing slash from baseUrl if it exists, and ensured url starts with /
     const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     const cleanUrl = url.startsWith('/') ? url : `/${url}`;

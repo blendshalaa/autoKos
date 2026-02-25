@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { XMarkIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { Layout } from '../components/layout/Layout';
 import { useCompareStore } from '../store/compareStore';
 import { formatPrice, formatNumber, getImageUrl } from '../utils/format';
@@ -54,7 +54,7 @@ export const ComparePage: React.FC = () => {
                                                         className="w-full h-32 object-cover"
                                                     />
                                                 ) : (
-                                                    <div className="w-full h-32 flex items-center justify-center text-gray-400 text-xs">No Image</div>
+                                                    <div className="w-full h-32 flex items-center justify-center text-gray-400 text-xs">Pa foto</div>
                                                 )}
                                             </div>
                                             <div className="text-lg font-bold text-gray-900">{item.make} {item.model}</div>

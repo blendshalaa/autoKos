@@ -19,7 +19,7 @@ interface EditProfileFormData {
 }
 
 export const EditProfilePage: React.FC = () => {
-    const { user, setUser } = useAuthStore();
+    const { user, updateUser } = useAuthStore();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -73,7 +73,7 @@ export const EditProfilePage: React.FC = () => {
             }
 
             // Update local state
-            setUser(updatedUser);
+            updateUser(updatedUser);
             // We need to update the token manually if it changed, but usually profile update doesn't change token
             // If we had a mechanism to refresh token, we'd do it here. 
             // For now, reliance on current token is fine as user ID didn't change.

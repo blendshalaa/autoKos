@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -7,7 +7,7 @@ import {
     BoltIcon,
     CogIcon,
     UserCircleIcon,
-    PhoneIcon,
+
     ChatBubbleLeftRightIcon,
     FlagIcon,
     CheckBadgeIcon,
@@ -40,23 +40,23 @@ export const ListingDetailPage: React.FC = () => {
 
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
-    const handleNextImage = (e?: React.MouseEvent) => {
+    const handleNextImage = useCallback((e?: React.MouseEvent) => {
         e?.stopPropagation();
         if (!listing?.images || listing.images.length === 0) return;
         const sorted = [...listing.images].sort((a, b) => a.order - b.order);
         const currentIndex = sorted.findIndex(img => img.imageUrl === activeImage);
         const nextIndex = (currentIndex + 1) % sorted.length;
         setActiveImage(sorted[nextIndex].imageUrl);
-    };
+    }, [listing, activeImage]);
 
-    const handlePrevImage = (e?: React.MouseEvent) => {
+    const handlePrevImage = useCallback((e?: React.MouseEvent) => {
         e?.stopPropagation();
         if (!listing?.images || listing.images.length === 0) return;
         const sorted = [...listing.images].sort((a, b) => a.order - b.order);
         const currentIndex = sorted.findIndex(img => img.imageUrl === activeImage);
         const prevIndex = (currentIndex - 1 + sorted.length) % sorted.length;
         setActiveImage(sorted[prevIndex].imageUrl);
-    };
+    }, [listing, activeImage]);
 
     const { addId } = useRecentlyViewedStore();
 
@@ -194,7 +194,7 @@ export const ListingDetailPage: React.FC = () => {
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="text-gray-400">No Image Available</div>
+                                    <div className="text-gray-400">Nuk ka foto</div>
                                 )}
                             </div>
 

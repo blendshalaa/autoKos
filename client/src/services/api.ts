@@ -8,8 +8,6 @@ const api = axios.create({
     },
 });
 
-console.log('API URL:', import.meta.env.VITE_API_URL || 'http://localhost:5000');
-
 // Add a request interceptor to add the auth token
 api.interceptors.request.use(
     (config) => {
@@ -26,27 +24,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        // If 401 Unauthorized, clear token and potential redirect (handled by protected routes mostly)
-        if (error.response && error.response.status === 401) {
-            if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
-                // Only clear and redirect if we're not already trying to auth
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                // We might want to trigger a global state update here or use an event
-                // to redirect the user to login. For now, rely on auth checking in routes.
-            }
-        }
-        return Promise.reject(error);
-    }
-);
-
-// Response interceptor
-api.interceptors.response.use(
-    (response) => response,
-    (error) => {
         if (error.response?.status === 401) {
-            // Auto logout on 401
-            useAuthStore.getState().logout();
+            const path = window.location.pathname;
+            if (!path.startsWith('/login') && !path.startsWith('/register')) {
+                useAuthStore.getState().logout();
+            }
         }
         return Promise.reject(error);
     }

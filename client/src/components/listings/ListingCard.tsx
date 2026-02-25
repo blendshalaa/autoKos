@@ -86,7 +86,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, isFavorited =
                     />
                 ) : (
                     <div className="w-full h-48 flex items-center justify-center bg-gray-100 text-gray-400">
-                        No Image
+                        Pa foto
                     </div>
                 )}
                 {statusBadge}

@@ -225,7 +225,7 @@ const MessagesPage: React.FC = () => {
 
                 {!isConnected && (
                     <div className="mt-4 p-2 bg-yellow-100 text-yellow-800 text-center rounded-lg text-sm">
-                        You are currently disconnected. Trying to reconnect...
+                        Jeni të shkëputur. Duke u përpjekur të rilidhemi...
                     </div>
                 )}
             </div>

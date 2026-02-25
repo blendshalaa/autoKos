@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bars3Icon, XMarkIcon, UserCircleIcon, HeartIcon, ChatBubbleLeftRightIcon, ArrowPathRoundedSquareIcon } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../store/authStore';
@@ -14,6 +14,20 @@ export const Navbar: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const [isProfileOpen, setIsProfileOpen] = React.useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const profileRef = useRef<HTMLDivElement>(null);
+
+    // Close profile dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+                setIsProfileOpen(false);
+            }
+        };
+        if (isProfileOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isProfileOpen]);
 
     useEffect(() => {
         if (!isAuthenticated) return;
@@ -84,7 +98,7 @@ export const Navbar: React.FC = () => {
                                 </Link>
 
                                 {/* Profile Dropdown */}
-                                <div className="ml-1 relative">
+                                <div className="ml-1 relative" ref={profileRef}>
                                     <div>
                                         <button
                                             onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -168,7 +182,7 @@ export const Navbar: React.FC = () => {
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                             className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
                         >
-                            <span className="sr-only">Open main menu</span>
+                            <span className="sr-only">Hap menynë kryesore</span>
                             {isMenuOpen ? (
                                 <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
                             ) : (

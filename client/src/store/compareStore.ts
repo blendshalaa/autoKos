@@ -17,16 +17,7 @@ export const useCompareStore = create<CompareState>()(
             addItem: (item) => {
                 const current = get().items;
                 if (current.find(i => i.id === item.id)) return;
-                if (current.length >= 3) {
-                    // Remove oldest (first) if full, or prevent? Usually replace or warn.
-                    // Requirement says "select 2-3 cars". Let's limit to 3.
-                    // If full, we'll replace the oldest one or just not add. 
-                    // Let's replace the first one (FIFO) to keep it simple, or just alert?
-                    // Better UX: Don't add if full and warn (component side). 
-                    // But store should probably just allow adding up to limit.
-                    // I will strictly cap at 3.
-                    if (current.length >= 3) return;
-                }
+                if (current.length >= 3) return;
                 set({ items: [...current, item] });
             },
             removeItem: (id) => {
