@@ -1,78 +1,105 @@
-import sharp from 'sharp';
-import path from 'path';
-import fs from 'fs/promises';
-import { env } from '../config/env';
+import cloudinary from '../config/cloudinary';
+import { Readable } from 'stream';
 
 interface ProcessedImage {
     imageUrl: string;
     thumbnailUrl: string;
 }
 
-const FULL_SIZE = { width: 1200, height: 900 };
-const THUMBNAIL_SIZE = { width: 400, height: 300 };
+/**
+ * Upload a buffer to Cloudinary and return the URL.
+ */
+const uploadToCloudinary = (
+    buffer: Buffer,
+    folder: string,
+    transformation?: object
+): Promise<{ secure_url: string; public_id: string }> => {
+    return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+            {
+                folder: `autokos/${folder}`,
+                format: 'webp',
+                ...(transformation && { transformation }),
+            },
+            (error, result) => {
+                if (error || !result) {
+                    reject(error || new Error('Cloudinary upload failed'));
+                } else {
+                    resolve({ secure_url: result.secure_url, public_id: result.public_id });
+                }
+            }
+        );
+
+        const readable = Readable.from(buffer);
+        readable.pipe(uploadStream);
+    });
+};
+
+/**
+ * Extract the Cloudinary public_id from a URL.
+ * e.g. https://res.cloudinary.com/xxx/image/upload/v123/autokos/listings/abc/file.webp
+ *   -> autokos/listings/abc/file
+ */
+const extractPublicId = (url: string): string | null => {
+    try {
+        const match = url.match(/\/upload\/(?:v\d+\/)?(autokos\/.+?)(?:\.\w+)?$/);
+        return match ? match[1] : null;
+    } catch {
+        return null;
+    }
+};
 
 export const processImage = async (
     file: Express.Multer.File,
     subFolder: string
 ): Promise<ProcessedImage> => {
-    const uploadDir = path.join(process.cwd(), env.UPLOAD_DIR, subFolder);
+    // Upload full-size image (max 1200x900)
+    const fullResult = await uploadToCloudinary(file.buffer, subFolder, {
+        width: 1200,
+        height: 900,
+        crop: 'limit',
+        quality: 'auto:good',
+    });
 
-    // Ensure upload directory exists
-    await fs.mkdir(uploadDir, { recursive: true });
+    // Upload thumbnail (400x300 cover crop)
+    const thumbResult = await uploadToCloudinary(file.buffer, `${subFolder}/thumbs`, {
+        width: 400,
+        height: 300,
+        crop: 'fill',
+        quality: 'auto:eco',
+    });
 
-    const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    const fullPath = path.join(uploadDir, `${filename}-full.webp`);
-    const thumbPath = path.join(uploadDir, `${filename}-thumb.webp`);
-
-    // Process full-size image
-    await sharp(file.buffer)
-        .resize(FULL_SIZE.width, FULL_SIZE.height, {
-            fit: 'inside',
-            withoutEnlargement: true,
-        })
-        .webp({ quality: 85 })
-        .toFile(fullPath);
-
-    // Process thumbnail
-    await sharp(file.buffer)
-        .resize(THUMBNAIL_SIZE.width, THUMBNAIL_SIZE.height, {
-            fit: 'cover',
-        })
-        .webp({ quality: 75 })
-        .toFile(thumbPath);
-
-    // Return relative URLs
-    const imageUrl = `/${env.UPLOAD_DIR}/${subFolder}/${filename}-full.webp`;
-    const thumbnailUrl = `/${env.UPLOAD_DIR}/${subFolder}/${filename}-thumb.webp`;
-
-    return { imageUrl, thumbnailUrl };
+    return {
+        imageUrl: fullResult.secure_url,
+        thumbnailUrl: thumbResult.secure_url,
+    };
 };
 
 export const deleteImage = async (imageUrl: string): Promise<void> => {
     try {
-        const filePath = path.join(process.cwd(), imageUrl);
-        await fs.unlink(filePath);
+        // Only attempt Cloudinary deletion for Cloudinary URLs
+        if (imageUrl.includes('res.cloudinary.com')) {
+            const publicId = extractPublicId(imageUrl);
+            if (publicId) {
+                await cloudinary.uploader.destroy(publicId);
+            }
+        }
     } catch (error) {
-        // Ignore errors if file doesn't exist
-        console.error('Error deleting image:', error);
+        console.error('Error deleting image from Cloudinary:', error);
     }
 };
 
 export const processAvatar = async (
-    file: Express.Multer.File,  //gdfgdfgdfgdfgdfgdfgdfg 
+    file: Express.Multer.File,
     userId: string
 ): Promise<string> => {
-    const uploadDir = path.join(process.cwd(), env.UPLOAD_DIR, 'avatars');
+    const result = await uploadToCloudinary(file.buffer, 'avatars', {
+        width: 200,
+        height: 200,
+        crop: 'fill',
+        gravity: 'face',
+        quality: 'auto:good',
+    });
 
-    await fs.mkdir(uploadDir, { recursive: true });
-
-    const filename = `${userId}-${Date.now()}.webp`;
-    const avatarPath = path.join(uploadDir, filename);
-
-    await sharp(file.buffer)
-        .resize(200, 200, { fit: 'cover' })
-        .webp({ quality: 85 })
-        .toFile(avatarPath);
-
-    return `/${env.UPLOAD_DIR}/avatars/${filename}`;
+    return result.secure_url;
 };

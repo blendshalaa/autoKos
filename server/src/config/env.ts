@@ -11,9 +11,12 @@ interface EnvConfig {
     NODE_ENV: 'development' | 'production' | 'test';
     FRONTEND_URL: string;
     UPLOAD_DIR: string;
+    CLOUDINARY_CLOUD_NAME: string;
+    CLOUDINARY_API_KEY: string;
+    CLOUDINARY_API_SECRET: string;
 }
 
-const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
+const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
 
 // Validate required environment variables
 for (const envVar of requiredEnvVars) {
@@ -29,6 +32,9 @@ export const env: EnvConfig = {
     NODE_ENV: (process.env.NODE_ENV as EnvConfig['NODE_ENV']) || 'development',
     FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
     UPLOAD_DIR: process.env.UPLOAD_DIR || 'uploads',
+    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME!,
+    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY!,
+    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET!,
 };
 
 export default env;
